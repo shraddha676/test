@@ -21,7 +21,7 @@ function getIdentifierType(v: string): "email" | "phone" | null {
 
 export default function Login() {
   const [, setLocation] = useLocation();
-  const { isAuthenticated, isLoading, refetch } = useAuth();
+  const { isAuthenticated, isLoading, setUser } = useAuth();
   const [mode, setMode] = useState<Mode>("login");
 
   const [identifier, setIdentifier] = useState("");
@@ -88,7 +88,7 @@ export default function Login() {
         return;
       }
 
-      refetch?.();
+      setUser(data.user);
       setLocation("/");
     } catch {
       setError("Network error. Please try again.");

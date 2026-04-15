@@ -158,7 +158,7 @@ export default function Login() {
                       <Input
                         id="firstName"
                         className="pl-9"
-                        placeholder="Arjun"
+                        placeholder="Shraddha"
                         value={firstName}
                         onChange={(e) => setFirstName(e.target.value)}
                         autoComplete="given-name"
@@ -169,7 +169,7 @@ export default function Login() {
                     <Label htmlFor="lastName">Last Name</Label>
                     <Input
                       id="lastName"
-                      placeholder="Sharma"
+                      placeholder="Damse"
                       value={lastName}
                       onChange={(e) => setLastName(e.target.value)}
                       autoComplete="family-name"

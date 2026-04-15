@@ -9,14 +9,17 @@ interface AuthState {
   isAuthenticated: boolean;
   login: () => void;
   logout: () => void;
+  refetch: () => void;
 }
 
 export function useAuth(): AuthState {
   const [user, setUser] = useState<AuthUser | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [tick, setTick] = useState(0);
 
   useEffect(() => {
     let cancelled = false;
+    setIsLoading(true);
 
     fetch("/api/auth/user", { credentials: "include" })
       .then((res) => {
@@ -39,15 +42,18 @@ export function useAuth(): AuthState {
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [tick]);
+
+  const refetch = useCallback(() => setTick((t) => t + 1), []);
 
   const login = useCallback(() => {
-    const base = import.meta.env.BASE_URL.replace(/\/+$/, "") || "/";
-    window.location.href = `/api/login?returnTo=${encodeURIComponent(base)}`;
+    window.location.href = "/login";
   }, []);
 
-  const logout = useCallback(() => {
-    window.location.href = "/api/logout";
+  const logout = useCallback(async () => {
+    await fetch("/api/auth/logout", { method: "POST", credentials: "include" });
+    setUser(null);
+    window.location.href = "/";
   }, []);
 
   return {
@@ -56,5 +62,6 @@ export function useAuth(): AuthState {
     isAuthenticated: !!user,
     login,
     logout,
+    refetch,
   };
 }

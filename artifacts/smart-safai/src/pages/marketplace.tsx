@@ -119,9 +119,10 @@ export default function Marketplace() {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const streamRef = useRef<MediaStream | null>(null);
 
-  const { data: listings = [], isLoading } = useGetListings(
+  const { data: listingsData, isLoading } = useGetListings(
     categoryFilter !== "all" ? { category: categoryFilter } : undefined
   );
+  const listings = Array.isArray(listingsData) ? listingsData : [];
 
   const createListing = useCreateListing();
 

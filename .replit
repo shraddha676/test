@@ -3,6 +3,7 @@ modules = ["nodejs-24"]
 [deployment]
 router = "application"
 deploymentTarget = "autoscale"
+run = ["sh", "-c", "PORT=19793 BASE_PATH=/ pnpm --filter @workspace/smart-safai run dev"]
 
 [deployment.postBuild]
 args = ["pnpm", "store", "prune"]

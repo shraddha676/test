@@ -3,13 +3,19 @@ info:
   # Do not change the title, if the title changes, the import paths will be broken
   title: Api
   version: 0.1.0
-  description: API specification
+  description: Smart Safai API specification
 servers:
   - url: /api
     description: Base API path
 tags:
   - name: health
     description: Health operations
+  - name: Auth
+    description: Browser and mobile authentication endpoints.
+  - name: listings
+    description: P2P waste barter listings
+  - name: tips
+    description: Daily waste tips
 paths:
   /healthz:
     get:
@@ -24,7 +30,270 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/HealthStatus"
+
+  /auth/user:
+    get:
+      tags: [Auth]
+      operationId: getCurrentAuthUser
+      summary: Get the currently authenticated user
+      parameters:
+        - $ref: '#/components/parameters/AuthorizationSessionHeader'
+        - $ref: '#/components/parameters/SessionCookie'
+      responses:
+        "200":
+          description: Auth status resolved successfully.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GetCurrentAuthUserResponse"
+
+  /login:
+    get:
+      tags: [Auth]
+      operationId: beginBrowserLogin
+      summary: Start the browser OIDC login flow
+      parameters:
+        - name: returnTo
+          in: query
+          required: false
+          schema:
+            type: string
+      responses:
+        "302":
+          description: Redirect to the OIDC authorization endpoint.
+
+  /callback:
+    get:
+      tags: [Auth]
+      operationId: handleBrowserLoginCallback
+      summary: Complete the browser OIDC login flow
+      parameters:
+        - name: code
+          in: query
+          required: false
+          schema:
+            type: string
+        - name: state
+          in: query
+          required: false
+          schema:
+            type: string
+      responses:
+        "302":
+          description: Redirect after login.
+
+  /logout:
+    get:
+      tags: [Auth]
+      operationId: logoutBrowserSession
+      summary: Clear the session and begin OIDC logout
+      parameters:
+        - $ref: '#/components/parameters/AuthorizationSessionHeader'
+        - $ref: '#/components/parameters/SessionCookie'
+      responses:
+        "302":
+          description: Redirect to the OIDC provider logout URL.
+
+  /mobile-auth/token-exchange:
+    post:
+      tags: [Auth]
+      operationId: exchangeMobileAuthorizationCode
+      summary: Exchange a mobile OIDC code for a session token
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/MobileTokenExchangeRequest'
+      responses:
+        "200":
+          description: Session created successfully.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ExchangeMobileAuthorizationCodeResponse'
+        "400":
+          description: Missing or invalid required fields.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        "401":
+          description: Token did not contain usable claims.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /mobile-auth/logout:
+    post:
+      tags: [Auth]
+      operationId: logoutMobileSession
+      summary: Delete a mobile session token
+      parameters:
+        - $ref: '#/components/parameters/AuthorizationSessionHeader'
+      responses:
+        "200":
+          description: Logout processed.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LogoutMobileSessionResponse'
+
+  /listings:
+    get:
+      operationId: getListings
+      tags: [listings]
+      summary: Get all listings
+      parameters:
+        - name: category
+          in: query
+          required: false
+          schema:
+            type: string
+      responses:
+        "200":
+          description: List of listings
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Listing"
+    post:
+      operationId: createListing
+      tags: [listings]
+      summary: Create a new listing
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateListingBody"
+      responses:
+        "201":
+          description: Listing created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Listing"
+        "401":
+          description: Not authenticated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /listings/{id}:
+    get:
+      operationId: getListing
+      tags: [listings]
+      summary: Get a single listing
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Single listing
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Listing"
+        "404":
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+    delete:
+      operationId: deleteListing
+      tags: [listings]
+      summary: Delete a listing
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Deleted
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SuccessResponse"
+        "401":
+          description: Not authenticated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /listings/{id}/request:
+    post:
+      operationId: requestListing
+      tags: [listings]
+      summary: Request an item
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Request sent
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SuccessResponse"
+
+  /listings/stats/summary:
+    get:
+      operationId: getListingStats
+      tags: [listings]
+      summary: Get listing statistics
+      responses:
+        "200":
+          description: Statistics
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ListingStats"
+
+  /tips/daily:
+    get:
+      operationId: getDailyTip
+      tags: [tips]
+      summary: Get the daily waste tip
+      responses:
+        "200":
+          description: Daily tip
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DailyTip"
+
 components:
+  parameters:
+    AuthorizationSessionHeader:
+      name: Authorization
+      in: header
+      required: false
+      schema:
+        type: string
+      description: "Bearer <session_token> for mobile clients"
+    SessionCookie:
+      name: sid
+      in: cookie
+      required: false
+      schema:
+        type: string
+      description: "Session cookie set by the login flow"
+
   schemas:
     HealthStatus:
       type: object
@@ -34,3 +303,202 @@ components:
       required:
         - status
 
+    AuthUser:
+      type: object
+      properties:
+        id:
+          type: string
+        email:
+          type: string
+          nullable: true
+        firstName:
+          type: string
+          nullable: true
+        lastName:
+          type: string
+          nullable: true
+        profileImage:
+          type: string
+          nullable: true
+        username:
+          type: string
+          nullable: true
+      required:
+        - id
+
+    GetCurrentAuthUserResponse:
+      type: object
+      properties:
+        user:
+          oneOf:
+            - $ref: "#/components/schemas/AuthUser"
+            - type: "null"
+        isAuthenticated:
+          type: boolean
+      required:
+        - user
+        - isAuthenticated
+
+    MobileTokenExchangeRequest:
+      type: object
+      properties:
+        code:
+          type: string
+        code_verifier:
+          type: string
+        state:
+          type: string
+        expected_state:
+          type: string
+        nonce:
+          type: string
+        redirect_uri:
+          type: string
+      required:
+        - code
+        - code_verifier
+
+    ExchangeMobileAuthorizationCodeResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+        session_token:
+          type: string
+        user:
+          $ref: "#/components/schemas/AuthUser"
+      required:
+        - success
+        - session_token
+        - user
+
+    LogoutMobileSessionResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+      required:
+        - success
+
+    Listing:
+      type: object
+      properties:
+        id:
+          type: integer
+        title:
+          type: string
+        category:
+          type: string
+        description:
+          type: string
+          nullable: true
+        location:
+          type: string
+        imageUrl:
+          type: string
+          nullable: true
+        price:
+          type: string
+          nullable: true
+        contactInfo:
+          type: string
+          nullable: true
+        userId:
+          type: string
+          nullable: true
+        userName:
+          type: string
+          nullable: true
+        requestCount:
+          type: integer
+        createdAt:
+          type: string
+          format: date-time
+      required:
+        - id
+        - title
+        - category
+        - location
+        - requestCount
+        - createdAt
+
+    CreateListingBody:
+      type: object
+      properties:
+        title:
+          type: string
+        category:
+          type: string
+        description:
+          type: string
+        location:
+          type: string
+        imageUrl:
+          type: string
+        price:
+          type: string
+        contactInfo:
+          type: string
+      required:
+        - title
+        - category
+        - location
+
+    ListingStats:
+      type: object
+      properties:
+        totalListings:
+          type: integer
+        dryWasteCount:
+          type: integer
+        wetWasteCount:
+          type: integer
+        electronicWasteCount:
+          type: integer
+        otherCount:
+          type: integer
+        totalRequests:
+          type: integer
+      required:
+        - totalListings
+        - dryWasteCount
+        - wetWasteCount
+        - electronicWasteCount
+        - otherCount
+        - totalRequests
+
+    DailyTip:
+      type: object
+      properties:
+        id:
+          type: integer
+        tip:
+          type: string
+        category:
+          type: string
+        icon:
+          type: string
+      required:
+        - id
+        - tip
+        - category
+        - icon
+
+    SuccessResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+        message:
+          type: string
+      required:
+        - success
+        - message
+
+    ErrorResponse:
+      type: object
+      properties:
+        error:
+          type: string
+      required:
+        - error
